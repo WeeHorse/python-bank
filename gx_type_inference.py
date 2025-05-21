@@ -56,12 +56,12 @@ def apply_type_expectations(df: pd.DataFrame, validator: Validator, sample_size=
         "boolean": "boolean",
     }
 
-    for column_name in df.columns:
-        inferred_type = infer_column_type(df[column_name], sample_size=sample_size)
+    for column in df.columns:
+        inferred_type = infer_column_type(df[column], sample_size=sample_size)
         gx_type = gx_type_map.get(inferred_type, "str")  # fallback to str if unknown
 
-        print(f"Inferred type for column '{column_name}': {gx_type}")
-        validator.expect_column_values_to_be_of_type(column_name=column_name, type_=gx_type)
+        # print(f"Inferred type for column '{column}': {gx_type}")
+        validator.expect_column_values_to_be_of_type(column=column, type_=gx_type)
 
 def cast_column_to_inferred_type(series: pd.Series, inferred_type: str):
     """
@@ -86,8 +86,8 @@ def cast_dataframe_to_inferred_types(df: pd.DataFrame, sample_size=10):
     based on the contents of each column.
     """
     new_df = df.copy()
-    for column_name in df.columns:
-        inferred_type = infer_column_type(df[column_name], sample_size=sample_size)
-        print(f"Casting column '{column_name}' to {inferred_type}")
-        new_df[column_name] = cast_column_to_inferred_type(df[column_name], inferred_type)
+    for column in df.columns:
+        inferred_type = infer_column_type(df[column], sample_size=sample_size)
+        # print(f"Casting column '{column}' to {inferred_type}")
+        new_df[column] = cast_column_to_inferred_type(df[column], inferred_type)
     return new_df
