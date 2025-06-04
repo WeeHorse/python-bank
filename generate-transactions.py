@@ -31,8 +31,8 @@ locale_map = {
 }
 
 # Configuration
-NUM_TRANSACTIONS = 100000
-KNOWN_ACCOUNTS_COUNT = 1000
+NUM_TRANSACTIONS = 500000
+KNOWN_ACCOUNTS_COUNT = 10000
 SWEDISH_BANK_PREFIX = "SE8902"
 BLACKLISTED_COUNTRIES = {'North Korea', 'Iran', 'Myanmar', 'Swaziland'}
 BLACKLISTED_MUNICIPALITIES = {'Lesoto', 'Lagos', 'Caracas'}
@@ -50,7 +50,8 @@ BACKDATE_FORWARD_DATE_PERCENTAGE = 0.01
 # Country groups
 NEIGHBOUR_COUNTRIES = {'Norway', 'Denmark', 'Finland', 'Germany', 'Estonia', 'Island', 'Poland'}
 SWEDEN = 'Sweden'
-TODAY = datetime(2025, 5, 19)
+STARTDATE = datetime(2025, 6, 2, 0, 0, 0)  # start of the range
+ENDDATE = datetime(2025, 6, 3, 23, 59, 59)  # end of the range
 
 # Currency mapping
 COUNTRY_CURRENCIES = {
@@ -138,13 +139,15 @@ def distribution_decision():
 
 def generate_transactions(n):
     data = []
-    start_date = TODAY.replace(month=1, day=1)
 
     within_bank_count = int(0.10 * n)
     normal_count = n - within_bank_count - BURST_ACCOUNT_COUNT * BURST_PER_ACCOUNT - SMURFING_ACCOUNT_COUNT * SMURFING_TARGETS_PER_ACCOUNT
 
+    def random_timestamp():
+        return STARTDATE + timedelta(seconds=random.randint(0, int((ENDDATE - STARTDATE).total_seconds())))
+
     for _ in range(within_bank_count):
-        timestamp = start_date + timedelta(days=random.randint(0, 137), hours=random.randint(0, 23), minutes=random.randint(0, 59))
+        timestamp = random_timestamp()
         sender = random.choice(list(known_accounts))
         receiver = random.choice(list(known_accounts))
         sender_country, sender_city = random_location("sweden")
@@ -154,7 +157,7 @@ def generate_transactions(n):
     for _ in range(normal_count):
         is_incoming = random.random() < 0.5
         dist = distribution_decision()
-        timestamp = start_date + timedelta(days=random.randint(0, 137), hours=random.randint(0, 23), minutes=random.randint(0, 59))
+        timestamp = random_timestamp()
         if is_incoming:
             sender = random_foreign_account()
             receiver = random.choice(list(known_accounts))
@@ -171,7 +174,7 @@ def generate_transactions(n):
 
     for _ in range(BURST_ACCOUNT_COUNT):
         sender = random.choice(list(known_accounts))
-        base_time = start_date + timedelta(days=random.randint(0, 137), hours=random.randint(9, 17))
+        base_time = random_timestamp()
         for _ in range(BURST_PER_ACCOUNT):
             receiver = random_foreign_account()
             ts = base_time + timedelta(seconds=random.randint(0, 300))
@@ -182,7 +185,7 @@ def generate_transactions(n):
         receiver = random.choice(list(known_accounts))
         for _ in range(SMURFING_TARGETS_PER_ACCOUNT):
             sender = random_foreign_account()
-            ts = start_date + timedelta(days=random.randint(0, 137), hours=random.randint(8, 18))
+            ts = random_timestamp()
             s_country, s_city = random_location("global")
             r_country, r_city = SWEDEN, random_location("sweden")[1]
             currency = resolve_currency(s_country)
@@ -208,8 +211,9 @@ def generate_transactions(n):
 
     return df
 
+
 if __name__ == "__main__":
     print("Generating synthetic transactions for Swedish bank scenario with fraud patterns...")
     df = generate_transactions(NUM_TRANSACTIONS)
-    df.to_csv("data/transactions.csv", index=False)
-    print("Saved to data/transactions.csv")
+    df.to_csv("data/transactions-500000.csv", index=False)
+    print("Saved to data/transactions-500000.csv")
